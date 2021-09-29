@@ -165,6 +165,40 @@ def main(source, verbose=False):
         help_embed.set_footer(text="For any inquiries, suggestions, or bug reports, get in touch with @Nerte#1804")
         await ctx.send(embed=help_embed)
 
+
+    @bot.command(pass_context=True, brief="Get the cost for each tx type")
+    async def gasping(ctx):
+
+        gasNum  = ctx.message.content.split("!gasping ")
+        gasNum = gasNum[1]
+        gasUser = ctx.message.author
+        gasChannel = ctx.message.channel.id
+
+        #print(ctx.message)
+
+
+        embed = discord.Embed(title=":fuelpump: GasPing Logged")
+        
+        fast, average, slow = get_gas_from_gasnow(verbose=verbose)
+        embed.add_field(name=f"I'll let you know when it hits ", value=f"{gasNum} Gwei", inline=False)
+        embed.set_footer(text=f"Fetched from {source}\nUse help to get the list of commands")
+        embed.set_author(
+            name='{0.display_name}'.format(ctx.author),
+            icon_url='{0.avatar_url}'.format(ctx.author)
+        )
+
+        
+        print(f"Gas watch: {gasNum}")
+        print(f"Gas User: {gasUser}")
+
+        ##add to text file
+        file1 = open("gasPingLog.txt", "a")
+        file1.write(f"{gasNum} {gasUser} {gasChannel}\n")
+        file1.close()
+
+
+        await ctx.send(embed=embed)
+
     # 2. Load config
     filename = 'config.yaml'
     with open(filename) as f:
@@ -172,12 +206,40 @@ def main(source, verbose=False):
 
     async def send_update(fastest, average, slow, **kw):
         status = f'⚡{fastest} |🐢{slow} | !help'
-        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing,
-                                                            name=status))
-
+        await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.playing,name=status))
+                                                            
         for guild in bot.guilds:
             guser = guild.get_member(bot.user.id);
             await guser.edit(nick=f'Gas: 🚶{average}');
+
+        #print (f"{guild}")
+        print (f"{average}")
+        with open("gasPingLog.txt", "r+") as a_file:
+            for line in a_file:
+              if str(average) in line:
+                stripped_line = line.strip()
+                #print(stripped_line)
+                #split into gas an user
+                splitline = stripped_line.split()
+                print(splitline)
+                user = splitline[1]
+                gas = splitline[0]
+                channelid = splitline[2]
+                if int(gas) == int(average):
+                  #client = discord.Client()
+                  #print(channelid)
+                  channel = bot.get_channel(id=int(channelid))
+                  print(f"<@{user}>, Gwei is now {gas}")
+
+                  #remove entry from file
+                  if line.split("\n") != f"{gas} {user} {channelid}":
+                    a_file.write(line)
+                    #send message
+                    await channel.send(f"@{user}, Gwei is now {gas}")
+            else:
+                print("not found on line.")
+            
+
 
         await asyncio.sleep(config['updateFreq'])  # in seconds
 
