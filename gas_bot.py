@@ -13,7 +13,12 @@ from discord.ext.commands import Bot
 import argparse
 import requests
 import time
+from tinydb import TinyDB, Query
+from tinydb.operations import delete
+from tinydb import where
 
+db = TinyDB('db.json')
+table = Query()
 
 def get_gas_from_etherscan(key: str,
                            verbose: bool = False) -> Tuple[int, int, int]:
@@ -179,7 +184,7 @@ def main(source, verbose=False):
 
         embed = discord.Embed(title=":fuelpump: GasPing Logged")
         
-        fast, average, slow = get_gas_from_gasnow(verbose=verbose)
+        fast, average, slow = get_gas_from_etherscan(config['etherscanKey'],verbose=verbose)
         embed.add_field(name=f"I'll let you know when it hits ", value=f"{gasNum} Gwei", inline=False)
         embed.set_footer(text=f"Fetched from {source}\nUse help to get the list of commands")
         embed.set_author(
@@ -191,10 +196,22 @@ def main(source, verbose=False):
         print(f"Gas watch: {gasNum}")
         print(f"Gas User: {gasUser}")
 
-        ##add to text file
-        file1 = open("gasPingLog.txt", "a")
-        file1.write(f"{gasNum} {gasUser} {gasChannel}\n")
-        file1.close()
+        #search if user already there
+        search = db.search(where('gasUser') == f'{gasUser}')
+        
+        #if user not already in db
+        if not search:
+            #insert
+            db.insert({'gasNum': f'{gasNum}', 'gasUser': f'{gasUser}', 'gasChannel': f'{gasChannel}'})
+        else:
+            #update 
+            db.remove(where('gasUser') == f"{gasUser}")
+            db.insert({'gasNum': f'{gasNum}', 'gasUser': f'{gasUser}', 'gasChannel': f'{gasChannel}'})
+
+        #add to text file
+        #file1 = open("gasPingLog.txt", "a")
+        #file1.write(f"{gasNum} {gasUser} {gasChannel}\n")
+        #file1.close()
 
 
         await ctx.send(embed=embed)
@@ -214,30 +231,52 @@ def main(source, verbose=False):
 
         #print (f"{guild}")
         print (f"{average}")
-        with open("gasPingLog.txt", "r+") as a_file:
-            for line in a_file:
-              if str(average) in line:
-                stripped_line = line.strip()
-                #print(stripped_line)
-                #split into gas an user
-                splitline = stripped_line.split()
-                print(splitline)
-                user = splitline[1]
-                gas = splitline[0]
-                channelid = splitline[2]
-                if int(gas) == int(average):
-                  #client = discord.Client()
-                  #print(channelid)
-                  channel = bot.get_channel(id=int(channelid))
-                  print(f"<@{user}>, Gwei is now {gas}")
 
-                  #remove entry from file
-                  if line.split("\n") != f"{gas} {user} {channelid}":
-                    a_file.write(line)
-                    #send message
-                    await channel.send(f"@{user}, Gwei is now {gas}")
-            else:
-                print("not found on line.")
+        ##search db for gas notification
+        notifyList = db.search(Query()['gasNum'] == f"{average}")
+        print(f"{notifyList}")
+
+        #loop through notifyList post in discord tagging users of that gas number
+
+        for results in notifyList:
+            print(results)
+            user = results['gasUser']
+            channelid = results['gasChannel']
+            gas = results['gasNum']
+
+            channel = bot.get_channel(id=int(channelid))
+            print(f"<@{user}>, Gwei is now {gas}")
+
+            #delete from database
+            #db.update(delete, Query()['gasUser'] == f"{user}")
+            db.remove(where('gasUser') == f"{user}")
+
+            await channel.send(f"@{user}, Gwei is now {gas}")
+
+        # with open("gasPingLog.txt", "r+") as a_file:
+        #     for line in a_file:
+        #       if str(average) in line:
+        #         stripped_line = line.strip()
+        #         #print(stripped_line)
+        #         #split into gas an user
+        #         splitline = stripped_line.split()
+        #         print(splitline)
+        #         user = splitline[1]
+        #         gas = splitline[0]
+        #         channelid = splitline[2]
+        #         if int(gas) == int(average):
+        #           #client = discord.Client()
+        #           #print(channelid)
+        #           channel = bot.get_channel(id=int(channelid))
+        #           print(f"<@{user}>, Gwei is now {gas}")
+
+        #           #remove entry from file
+        #           if line.split("\n") != f"{gas} {user} {channelid}":
+        #             a_file.write(line)
+        #             #send message
+        #             await channel.send(f"@{user}, Gwei is now {gas}")
+        #     else:
+        #         print("not found on line.")
             
 
 
