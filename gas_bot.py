@@ -102,6 +102,19 @@ def main(source, verbose=False):
     # Allow the command prefix to be either ! or %
     bot = Bot(command_prefix=('!', '%'), help_command=None)
 
+
+    @bot.event
+    async def on_message(message):
+        openseaAssetURL = "https://opensea.io/assets"
+        if openseaAssetURL in message.content:
+            imgURL = get_NFT_image(message.content)
+            print(imgURL)
+            #print(message.channel)
+            await message.channel.send(f"{imgURL}")
+        await bot.process_commands(message)
+
+
+
     @bot.command(pass_context=True, brief="Get ETH gas prices")
     async def gas(ctx):
         embed = discord.Embed(title=":fuelpump: Current gas prices")
@@ -306,18 +319,13 @@ def main(source, verbose=False):
         await asyncio.sleep(config['updateFreq'])  # in seconds
 
 
-    @bot.event
-    async def on_message(message):
-        openseaAssetURL = "https://opensea.io/assets"
-        if openseaAssetURL in message.content:
-            imgURL = get_NFT_image(message.content)
-            print(imgURL)
-            #print(message.channel)
-            await message.channel.send(f"{imgURL}")
+    
 
 
     @bot.event
     async def on_ready():
+
+
         """
         When discord client is ready
         """
