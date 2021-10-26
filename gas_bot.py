@@ -16,9 +16,32 @@ import time
 from tinydb import TinyDB, Query
 from tinydb.operations import delete
 from tinydb import where
+import requests
+import json
+from types import SimpleNamespace
 
 db = TinyDB('db.json')
 table = Query()
+
+def get_NFT_image(url):
+    ##givenURL will look like https://opensea.io/assets/0x10064373e248bc7253653ca05df73cf226202956/11211
+    ##strip after assets/
+    asset = url.split("assets/")
+    asset = asset[1]
+    #print(asset)
+    ##add to api url
+    APIurl = "https://api.opensea.io/api/v1/asset/"+asset
+
+    response = requests.request("GET", APIurl)
+    print(response.text)
+
+    x = json.loads(response.text, object_hook=lambda d: SimpleNamespace(**d))
+    #print(x.name, x.hometown.name, x.hometown.id)
+
+    print(x.image_url)
+
+    return x.image_url
+
 
 def get_gas_from_etherscan(key: str,
                            verbose: bool = False) -> Tuple[int, int, int]:
@@ -281,6 +304,17 @@ def main(source, verbose=False):
 
 
         await asyncio.sleep(config['updateFreq'])  # in seconds
+
+
+    @bot.event
+    async def on_message(message):
+        openseaAssetURL = "https://opensea.io/assets"
+        if openseaAssetURL in message.content:
+            imgURL = get_NFT_image(message.content)
+            print(imgURL)
+            #print(message.channel)
+            await message.channel.send(f"{imgURL}")
+
 
     @bot.event
     async def on_ready():
