@@ -33,14 +33,19 @@ def get_NFT_image(url):
     APIurl = "https://api.opensea.io/api/v1/asset/"+asset
 
     response = requests.request("GET", APIurl)
-    print(response.text)
+    #print(response.text)
 
     x = json.loads(response.text, object_hook=lambda d: SimpleNamespace(**d))
     #print(x.name, x.hometown.name, x.hometown.id)
 
-    print(x.image_url)
-
-    return x.image_url
+    
+    if x.image_original_url != None:
+        print(x.image_original_url)
+        return x.image_original_url
+    else:
+        print(x.image_url)
+        return x.image_url
+    
 
 
 def get_gas_from_etherscan(key: str,
@@ -212,7 +217,7 @@ def main(source, verbose=False):
 
         gasNum  = ctx.message.content.split("!gasping ")
         gasNum = gasNum[1]
-        gasUser = ctx.message.author
+        gasUser = ctx.message.author.id
         gasChannel = ctx.message.channel.id
 
         #print(ctx.message)
@@ -282,12 +287,14 @@ def main(source, verbose=False):
 
             channel = bot.get_channel(id=int(channelid))
             print(f"<@{user}>, Gwei is now {gas}")
-
+           
             #delete from database
             #db.update(delete, Query()['gasUser'] == f"{user}")
             db.remove(where('gasUser') == f"{user}")
-
-            await channel.send(f"@{user}, Gwei is now {gas}")
+            # client = discord.Client()
+            # realUser = discord.utils.get(client.users, name=user, discriminator="1234")
+            # print(realUser)
+            await channel.send(f"<@{user}>, Gwei is now {gas}")
 
         # with open("gasPingLog.txt", "r+") as a_file:
         #     for line in a_file:
