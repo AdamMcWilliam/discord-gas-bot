@@ -19,6 +19,8 @@ from tinydb import where
 import requests
 import json
 from types import SimpleNamespace
+import re
+
 
 db = TinyDB('db.json')
 table = Query()
@@ -112,7 +114,9 @@ def main(source, verbose=False):
     async def on_message(message):
         openseaAssetURL = "https://opensea.io/assets"
         if openseaAssetURL in message.content:
-            imgURL = get_NFT_image(message.content)
+            #pull URL only from message
+            apiImageUrl = re.search("(?P<url>https?://[^\s]+)", message.content).group("url")
+            imgURL = get_NFT_image(apiImageUrl)
             print(imgURL)
             #print(message.channel)
             await message.channel.send(f"{imgURL}")
