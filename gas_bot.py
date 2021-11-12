@@ -30,6 +30,8 @@ def get_NFT_image(url):
     ##strip after assets/
     asset = url.split("assets/")
     asset = asset[1]
+    asset = asset.split("?")
+    asset = asset[0]
     #print(asset)
     ##add to api url
     APIurl = "https://api.opensea.io/api/v1/asset/"+asset
@@ -218,8 +220,13 @@ def main(source, verbose=False):
 
     @bot.command(pass_context=True, brief="Get the cost for each tx type")
     async def gasping(ctx):
+        
+        message = ctx.message.content
 
-        gasNum  = ctx.message.content.split("!gasping ")
+        #trim end off
+        trimmed = message.rstrip()
+        #remove command
+        gasNum  = trimmed.split("!gasping ")
         gasNum = gasNum[1]
         gasUser = ctx.message.author.id
         gasChannel = ctx.message.channel.id
@@ -295,42 +302,15 @@ def main(source, verbose=False):
             #delete from database
             #db.update(delete, Query()['gasUser'] == f"{user}")
             db.remove(where('gasUser') == f"{user}")
-            # client = discord.Client()
-            # realUser = discord.utils.get(client.users, name=user, discriminator="1234")
-            # print(realUser)
+            #remove from LIST
+            #notifyList.pop(idx)
+            
             await channel.send(f"<@{user}>, Gwei is now {gas}")
 
-        # with open("gasPingLog.txt", "r+") as a_file:
-        #     for line in a_file:
-        #       if str(average) in line:
-        #         stripped_line = line.strip()
-        #         #print(stripped_line)
-        #         #split into gas an user
-        #         splitline = stripped_line.split()
-        #         print(splitline)
-        #         user = splitline[1]
-        #         gas = splitline[0]
-        #         channelid = splitline[2]
-        #         if int(gas) == int(average):
-        #           #client = discord.Client()
-        #           #print(channelid)
-        #           channel = bot.get_channel(id=int(channelid))
-        #           print(f"<@{user}>, Gwei is now {gas}")
-
-        #           #remove entry from file
-        #           if line.split("\n") != f"{gas} {user} {channelid}":
-        #             a_file.write(line)
-        #             #send message
-        #             await channel.send(f"@{user}, Gwei is now {gas}")
-        #     else:
-        #         print("not found on line.")
-            
 
 
         await asyncio.sleep(config['updateFreq'])  # in seconds
 
-
-    
 
 
     @bot.event
