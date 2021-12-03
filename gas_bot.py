@@ -114,6 +114,11 @@ def main(source, verbose=False):
 
     @bot.event
     async def on_message(message):
+
+        if message.content == "!thread":
+            f = await message.channel.create_thread(name="Thread", minutes=60, message=message)
+
+
         openseaAssetURL = "https://opensea.io/assets"
         if openseaAssetURL in message.content:
             #pull URL only from message
